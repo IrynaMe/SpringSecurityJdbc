@@ -1,0 +1,125 @@
+
+>start project with spring.io
+>dependencies:
+    Spring Security
+    Spring Web
+    MySQL Driver
+    Spring Boot DevTools
+    Spring Data JDBC
+>set .properties: #configure db
+                  spring.jpa.hibernate.ddl-auto=update
+                  spring.datasource.url=jdbc:mysql://localhost:8889/credenziali
+                  spring.datasource.username=root
+                  spring.datasource.password=root
+
+>create db, tables (users & authorities), insert data in tables:
+sql-----------------------------------
+create database credenziali;
+use credenziali;
+
+CREATE TABLE `users` (
+  `username` varchar(50) NOT NULL,
+  `password` char(68) NOT NULL,
+  `enabled` tinyint NOT NULL,
+  PRIMARY KEY (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `authorities` (
+  `username` varchar(50) NOT NULL,
+  `authority` varchar(50) NOT NULL,
+  UNIQUE KEY `authorities4_idx_1` (`username`,`authority`),
+  CONSTRAINT `authorities4_ibfk_1` FOREIGN KEY (`username`) REFERENCES `users` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+INSERT INTO `users`
+VALUES ('admin','{noop}test123',1),
+('mario','{noop}test123',1),
+('nicola','{noop}test123',1),
+('guest','{noop}test123',1),
+('enzo','{noop}test123',1);
+
+INSERT INTO `authorities`
+VALUES
+('admin','ROLE_ADMIN'),
+('mario','ROLE_IMPIEGATO'),
+('nicola','ROLE_IMPIEGATO'),
+('guest','ROLE_GUEST'),
+('enzo','ROLE_MANAGER');
+
+end sql-----------------------------------
+
+> class AppSecurityConfig with 2 @Bean:
+    public UserDetailsService userDetailsService(DataSource dataSource) //4 authentication
+    public SecurityFilterChain filterChain(HttpSecurity http) //4 authorization
+> class AppGeneralController
+
+
+======================== use encrypted passwords ============
+=============================================================
+
+> substitute the passwords in table users for encrypted ones:
+>>https://bcrypt-generator.com/    to simulate encrypted psw-->generate hash for each psw (test123)
+    $2a$12$wR4NK7SkkzV6Gkt3t1RcIOpF9AE5GaUvpOTvEKIbVpsWHYh2CCFVi
+    $2a$12$B3GKY0gSx.lEQbLPh33FkuUpNFLpr0lbwtfkkgkDFzma.tW20.hZe
+    $2a$12$/uTj/ZDVwJqJPI1HR2opHulbwug5mwbUK8c5WwevFllfnrfWzcoX6
+    $2a$12$sr5DgGbTVCR1wrOh7NhqoO9idq0T9RZ9RGm2jQL8cif/HvdXf0kO2
+    $2a$12$V7QDDLcBx4jiWKeDpLKKxOd8DI4Q8x84sf/WSyYX8IyHZDGBlTuFO
+>> insert in the table (change data for users -> have to drop tables and create them from scratch)
+sql------------------------------
+INSERT INTO `users`
+VALUES ('admin','{bcrypt}$2a$12$TJWoTZoGvFtswIhbUDknGO0VgF6EKotrO0DIujNpQ7WWgi7DTSpWO',1),
+('mario','{bcrypt}$2a$12$2WjhmphA7sew.wiy6jDXnOOfLUdNF2bMZyCShrBqoK0Ye0lZUbbfm',1),
+('nicola','{bcrypt}$2a$12$Mf.mTTNXcIUZenB8T8/Bv.bW2DvqNrPQB53.0sBze6UuZyAJ8oOfK',1),
+('guest','{bcrypt}$2a$12$ABSw3AlvHGZ9vpw/avY0ku8szZmtuCokWvJU5vMXkEhudBAm0h8zC',1),
+('enzo','users$2a$12$Mf.mTTNXcIUZenB8T8/Bv.bW2DvqNrPQB53.0sBze6UuZyAJ8oOfK',1);
+end sql------------------------------
+
+
+
+
+==========================
+>duplicate AppSecurityConfig ->in OldAppSecurityConfig comment annotation @Configuration,
+>continue work in AppSecurityConfig
+> reset .properties (change db name):
+.properties -----------------
+#configure db
+spring.jpa.hibernate.ddl-auto=update
+#spring.datasource.primary.url=jdbc:mysql://localhost:8889/credenziali
+spring.datasource.url=jdbc:mysql://localhost:8889/dblogin
+
+spring.datasource.username=root
+spring.datasource.password=root
+end .properties---------------
+>in AppSecurityConfig change method UserDetailsService userDetailsService(DataSource dataSource)
+
+>create db, tables, insert into tables data from database-bcrypt.sql
+>command to execute queries from file:
+    mysql -h 127.0.0.1 -u root < database-bcrypt.sql
+    or manually everything from this file via terminal
+
+
+> create interface SicurezzaRepository & class Utente
+> method to insert in AppController
+
+
+
+
+====================to use 2 db=========
+>in properties specify data for ech db
+>in AppSecurityconfig create 2 @Bean (a bean for each db)
+    &  2 @Bean JDBCTemplate ->to specify datasource for query in db(which one of 2 beans to use)
+>create 2nd db, table
+sql-------------------------------
+create database impiegati;
+use impiegati;
+
+CREATE table impiegato (
+id int(2) not null,
+cognome varchar(20) not null,
+eta int(2) not null,
+stipendio int (6));
+sql-------------------------------
+> add @Qualifier to beans jdbcTemplate, Datasource and repositories that use these beans
+
+
+)
